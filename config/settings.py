@@ -186,3 +186,6 @@ LOGGING = {
         },
     }
 }
+
+## https://docs.djangoproject.com/en/1.11/topics/cache/
+CACHES = json.loads( os.environ['XISBN__CACHES_JSON'] )
