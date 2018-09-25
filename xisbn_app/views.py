@@ -25,3 +25,11 @@ def info( request ):
     context_dct = view_info_helper.make_context( request, rq_now, info_txt, taken )
     output = json.dumps( context_dct, sort_keys=True, indent=2 )
     return HttpResponse( output, content_type='application/json; charset=utf-8' )
+
+
+def alternates( request, isbn_value ):
+    return HttpResponse( 'alternates response coming for `%s`' % isbn_value )
+
+
+def filtered_alternates( request, isbn_value ):
+    return HttpResponse( 'filtered_alternates response coming for `%s`' % isbn_value )
