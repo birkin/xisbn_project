@@ -28,6 +28,7 @@ SECRET_KEY = os.environ['XISBN__SECRET_KEY']
 DEBUG = json.loads( os.environ['XISBN__DEBUG_JSON'] )  # will be True or False
 
 ADMINS = json.loads( os.environ['XISBN__ADMINS_JSON'] )
+MANAGERS = ADMINS
 
 ALLOWED_HOSTS = json.loads( os.environ['XISBN__ALLOWED_HOSTS'] )  # list
 
@@ -51,6 +52,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -124,6 +126,7 @@ STATIC_ROOT = os.environ['XISBN__STATIC_ROOT']  # needed for collectstatic comma
 
 
 # Email
+SERVER_EMAIL = os.environ['XISBN__SERVER_EMAIL']
 EMAIL_HOST = os.environ['XISBN__EMAIL_HOST']
 EMAIL_PORT = int( os.environ['XISBN__EMAIL_PORT'] )
 
@@ -153,6 +156,11 @@ LOGGING = {
         },
     },
     'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'include_html': True,
+        },
         'logfile': {
             'level':'DEBUG',
             'class':'logging.FileHandler',  # note: configure server to use system's log-rotate to avoid permissions issues
@@ -166,6 +174,11 @@ LOGGING = {
         },
     },
     'loggers': {
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
         'xisbn_app': {
             'handlers': ['logfile', 'console'],
             'level': os.environ.get(u'XISBN__LOG_LEVEL'),
