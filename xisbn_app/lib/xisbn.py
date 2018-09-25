@@ -4,7 +4,8 @@ import datetime, json, logging, os, pprint, time
 import isbnlib
 from django.core.cache import cache
 from django.http import HttpResponse
-# from xisbn_app import settings_app
+from xisbn_app.models import XisbnTracker
+
 
 
 log = logging.getLogger(__name__)
@@ -31,20 +32,39 @@ class XHelper( object ):
         log.debug( 'validity, `%s`' % validity )
         return validity
 
+    # def get_alternates( self ):
+    #     """ Returns list of alternates.
+    #         Called by views.alternates() """
+    #     alternates = cache.get( self.canonical_isbn )
+    #     if alternates is None:
+    #         self.cached_status = 'alternates_not_from_cache'
+    #         alternates = isbnlib.editions( self.canonical_isbn, service='merge' )
+    #         alternates = self._run_remove( alternates )
+    #         cache.set( self.canonical_isbn, alternates, (60*60*24*365) )  # (key, value, time-in-seconds) -- time argument is optional; defaults to settings.py entry
+    #     else:
+    #         self.cached_status = 'alternates_from_cache'
+    #     log.debug( 'cached_status, `%s`' % self.cached_status )
+    #     log.debug( 'alternates, ```%s```' % alternates )
+    #     return alternates
+
+
     def get_alternates( self ):
         """ Returns list of alternates.
             Called by views.alternates() """
-        alternates = cache.get( self.canonical_isbn )
-        if alternates is None:
-            self.cached_status = 'alternates_not_from_cache'
-            alternates = isbnlib.editions( self.canonical_isbn, service='merge' )
-            alternates = self._run_remove( alternates )
-            cache.set( self.canonical_isbn, alternates, (60*60*24*365) )  # (key, value, time-in-seconds) -- time argument is optional; defaults to settings.py entry
-        else:
-            self.cached_status = 'alternates_from_cache'
-        log.debug( 'cached_status, `%s`' % self.cached_status )
+        alternates = []
+        try:
+            trckr = XisbnTracker.objects.get( canonical_isbn=self.canonical_isbn )
+        except:
+            log.debug( 'new xisb-tracker-record will be created' )
+            trckr = XisbnTracker( canonical_isbn=self.canonical_isbn )
+            # trckr.canonical_isbn = self.canonical_isbn
+            trckr.save()
+        if trckr.alternates:
+            alternates = json.loads( trckr.alternates )
         log.debug( 'alternates, ```%s```' % alternates )
         return alternates
+
+
 
     def _run_remove( self, alternates ):
         """ Removes target isbn from alternates list.
@@ -55,33 +75,6 @@ class XHelper( object ):
         except:
             log.debug( 'canonical_isbn was not in alternates list' )
         return alternates
-
-    # def get_filtered_alternates( self, alternates ):
-    #     """ Returns list of filtered alternates.
-    #         Called by views.filtered_alternates() """
-    #     filtered_alternates = []
-    #     try:
-    #         info_dct = isbnlib.meta(self.canonical_isbn, service='default', cache='default')
-    #     except Exception as e:
-    #         log.error( 'exception loading metadata, ```%s```; returning empty filtered_alternates list' % e )
-    #         return []
-    #     language_code = info_dct.get( 'Language', None )
-    #     log.debug( 'language_code, `%s`' % language_code )
-    #     if language_code is None:
-    #         return []
-    #     for possible_isbn in alternates:
-    #         time.sleep( 1 )
-    #         alt_info_dct = alt_language_code = None
-    #         try:
-    #             alt_info_dct = json.loads( isbnlib.meta(possible_isbn, service='default', cache='default') )
-    #         except Exception as e:
-    #             log.warning( 'problem load metadata for possible_isbn, `%s`; error, ```%s```; continuing' % (possible_isbn, e) )
-    #         if alt_info_dct:
-    #             alt_language_code = alt_info_dct.get( 'Language', None )
-    #         if language_code == alt_language_code:
-    #             filtered_alternates.append( possible_isbn )
-    #     log.debug( 'filtered_alternates, ```%s```' % filtered_alternates )
-    #     return filtered_alternates
 
     def get_filtered_alternates( self, alternates ):
         """ Returns list of filtered alternates.

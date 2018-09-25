@@ -16,7 +16,7 @@ class XisbnTracker( models.Model ):
     alternates = models.TextField( null=True, blank=True )
     filtered_alternates = models.TextField( null=True, blank=True )
     brown_filtered_alternates = models.TextField( null=True, blank=True )
-    bfa_last_changed_date = models.DateTimeField()
+    bfa_last_changed_date = models.DateTimeField( null=True, blank=True )
     processing_status = models.CharField( max_length=20, default='not_yet_processed', null=True, blank=True )  # or 'in_process' or 'processd'
     dt_created = models.DateTimeField( auto_now_add=True )
     dt_modified = models.DateTimeField( auto_now=True )

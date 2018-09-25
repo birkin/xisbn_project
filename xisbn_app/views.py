@@ -49,4 +49,3 @@ def alternates( request, isbn_value ):
     resp = xisbn_helper.make_alternates_response( request, alternates, start_time )
     return resp
 
-
