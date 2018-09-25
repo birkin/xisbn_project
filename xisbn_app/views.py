@@ -29,6 +29,17 @@ def info( request ):
     return HttpResponse( output, content_type='application/json; charset=utf-8' )
 
 
+def filtered_alternates( request, isbn_value ):
+    """ Returns _partial_ list of filtered list of isbns. """
+    if xisbn_helper.check_isbn_validity( isbn_value ) is not True:
+        return HttpResponseBadRequest( 'invalid ISBN' )
+    start_time = datetime.datetime.now()
+    alternates = xisbn_helper.get_alternates()
+    filtered_alternates = xisbn_helper.get_filtered_alternates( alternates[0:2] )
+    resp = xisbn_helper.make_filtered_alternates_response( request, filtered_alternates, start_time )
+    return resp
+
+
 def alternates( request, isbn_value ):
     """ Returns list of unfiltered list of isbns. """
     if xisbn_helper.check_isbn_validity( isbn_value ) is not True:
@@ -39,9 +50,3 @@ def alternates( request, isbn_value ):
     return resp
 
 
-# def alternates( request, isbn_value ):
-#     return HttpResponse( 'alternates response coming for `%s`' % isbn_value )
-
-
-def filtered_alternates( request, isbn_value ):
-    return HttpResponse( 'filtered_alternates response coming for `%s`' % isbn_value )
