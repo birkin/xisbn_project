@@ -33,8 +33,9 @@ def alternates( request, isbn_value ):
     """ Returns list of unfiltered list of isbns. """
     if xisbn_helper.check_isbn_validity( isbn_value ) is not True:
         return HttpResponseBadRequest( 'invalid ISBN' )
+    start_time = datetime.datetime.now()
     alternates = xisbn_helper.get_alternates()
-    resp = xisbn_helper.make_response( alternates )
+    resp = xisbn_helper.make_alternates_response( request, alternates, start_time )
     return resp
 
 
