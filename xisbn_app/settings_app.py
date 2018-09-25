@@ -3,4 +3,4 @@
 import json, os
 
 
-README_URL = os.environ['xisbn_app__README_URL']
+DOCUMENTATION_URL = os.environ['XISBN__README_URL']
