@@ -15,9 +15,11 @@ urlpatterns = [
 
     url( r'^info/$', views.info, name='info_url' ),
 
-    url( r'^v1/filtered_isbn_alternates/(?P<isbn_value>.*)/$', views.filtered_alternates, name='filtered_alternates_url' ),
+    url( r'^v1/josiah_filtered_alternate_isbns/(?P<isbn_value>.*)/$', views.filtered_alternates, name='josiah_filtered_alternates_url' ),
 
-    url( r'^v1/isbn_alternates/(?P<isbn_value>.*)/$', views.alternates, name='alternates_url' ),
+    url( r'^v1/filtered_alternate_isbns/(?P<isbn_value>.*)/$', views.filtered_alternates, name='filtered_alternates_url' ),
+
+    url( r'^v1/alternate_isbns/(?P<isbn_value>.*)/$', views.alternates, name='alternates_url' ),
 
     url( r'^$', RedirectView.as_view(pattern_name='info_url') ),
 
