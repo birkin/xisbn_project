@@ -11,9 +11,13 @@ admin.autodiscover()
 
 urlpatterns = [
 
-    url( r'^admin/', admin.site.urls ),  # eg host/project_x/admin/
+    # url( r'^admin/', admin.site.urls ),  # eg host/project_x/admin/
 
     url( r'^info/$', views.info, name='info_url' ),
+
+    url( r'^v1/filtered_isbn_alternates/(?P<isbn_value>.*)/$', views.filtered_alternates, name='filtered_alternates_url' ),
+
+    url( r'^v1/isbn_alternates/(?P<isbn_value>.*)/$', views.alternates, name='alternates_url' ),
 
     url( r'^$', RedirectView.as_view(pattern_name='info_url') ),
 
