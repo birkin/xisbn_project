@@ -164,7 +164,7 @@ LOGGING = {
         'logfile': {
             'level':'DEBUG',
             'class':'logging.FileHandler',  # note: configure server to use system's log-rotate to avoid permissions issues
-            'filename': os.environ.get(u'XISBN__LOG_PATH'),
+            'filename': os.environ.get( 'XISBN__LOG_PATH' ),
             'formatter': 'standard',
         },
         'console':{
