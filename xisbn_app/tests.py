@@ -9,6 +9,9 @@ log = logging.getLogger(__name__)
 TestCase.maxDiff = None
 
 
+# class
+
+
 class RootUrlTest( TestCase ):
     """ Checks root urls. """
 

@@ -102,7 +102,7 @@ class Processor( object ):
         """ Prepares and saves list of alternates.
             Called by Enhancer.process_isbn() """
         alternates = isbnlib.editions( x_record.canonical_isbn, service='merge' )
-        alternates = self.run_remove( alternates )
+        alternates = self.run_remove( alternates, x_record.canonical_isbn )
         now = datetime.datetime.now()
         data_dct = { 'prepared': str(now), 'alternates': alternates }
         x_record.alternates = json.dumps( data_dct )
@@ -111,11 +111,11 @@ class Processor( object ):
         log.debug( 'alternates, ```%s```' % x_record.alternates )
         return
 
-    def run_remove( self, alternates ):
+    def run_remove( self, alternates, canonical_isbn ):
         """ Removes target isbn from alternates list.
             Called by get_alternates() """
         try:
-            alternates.remove( self.canonical_isbn )
+            alternates.remove( canonical_isbn )
             log.debug( 'isbn removed' )
         except:
             log.debug( 'canonical_isbn was not in alternates list' )
