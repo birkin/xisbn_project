@@ -48,10 +48,17 @@ class Enhancer( object ):
         processor.prepare_brown_filtered_alternates( tracker_record )
         return
 
+    def find_record_to_process( self ):
+        """ Grabs tracker record.
+            Called by process_isbn() """
+        trckr = XisbnTracker.objects.order_by('bfa_last_changed_date')[0]
+        log.debug( 'trckr.canonical_isbn, `%s`' % trckr.canonical_isbn )
+        return trckr
+
     ## end Enhancer()
 
 
 if __name__ == '__main__':
-    log.debug( '\n---\nstarting' )
+    log.debug( '\n---\nstarting offline enhancer work' )
     enhancer = Enhancer()
     enhancer.process_isbn()
