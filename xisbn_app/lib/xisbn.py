@@ -130,7 +130,7 @@ class Processor( object ):
         else:
             data_dct = self.loop_through_alternates( x_record )
         x_record.filtered_alternates = json.dumps( data_dct, sort_keys=True )
-        x_record.bfa_last_changed_date = datetime.datetime.now()
+        # x_record.bfa_last_changed_date = datetime.datetime.now()
         x_record.save()
         log.debug( 'filtered_alternates, ```%s```' % x_record.filtered_alternates )
         return
@@ -144,7 +144,7 @@ class Processor( object ):
             log.error( 'exception loading metadata, ```%s```' % e )
             return None
         x_record.canonical_meta = json.dumps( data_dct, sort_keys=True )
-        x_record.bfa_last_changed_date = datetime.datetime.now()
+        # x_record.bfa_last_changed_date = datetime.datetime.now()
         x_record.save()
         language_code = data_dct.get( 'Language', None )
         log.debug( 'canonical-language_code, `%s`' % language_code )
@@ -175,24 +175,45 @@ class Processor( object ):
             filtered_alternates.append( {alt_isbn: data_dct} )
         return
 
+    def prepare_brown_filtered_alternates( self, x_record ):
+        """ Determines which of the filtered_isbns brown holds.
+            Called by Enhancer.process_isbn() """
+        brown_filtered_alternates = []
+        filtered_alternates = json.loads(x_record.filtered_alternates)['filtered_alternates']
+        for ( isbn_key, meta_dct_val ) in filtered_alternates:
+            url = 'https://library.brown.edu/availability_api/v1/isbn/%s/' % isbn_key
+            r = requests.get( url )
+            if r.status_code == 200:
+                sierra_holdings = r.json()['response']['sierra']
+                if sierra_holdings:
+                    for holding in sierra_holdings:
+                        brown_filtered_alternates.append( {holding['isbn']: {'bib': holding['bib'], 'year': holding.get('pubyear', None)}} )
+                x_record.brown_filtered_alternates = json.dumps( brown_filtered_alternates, sort_keys=True )
+        x_record.bfa_last_changed_date = datetime.datetime.now()
+        x_record.save()
+        log.debug( 'brown_filtered_alternates, ```%s```' % x_record.filtered_alternates )
+        return
+
+
+
     ## end class Processor()
 
 
 
-def apply_filter( self, possible_isbn, language_code, filtered_alternates ):
-    """ Checks possible_isbn.
-        Called by get_filtered_alternates() """
-    time.sleep( 1 )
-    alt_info_dct = alt_language_code = None
-    try:
-        alt_info_dct = json.loads( isbnlib.meta(possible_isbn, service='default', cache='default') )
-    except Exception as e:
-        log.warning( 'problem load metadata for possible_isbn, `%s`; error, ```%s```; continuing' % (possible_isbn, e) )
-    if alt_info_dct:
-        alt_language_code = alt_info_dct.get( 'Language', None )
-    if language_code == alt_language_code:
-        filtered_alternates.append( possible_isbn )
-    return
+# def apply_filter( self, possible_isbn, language_code, filtered_alternates ):
+#     """ Checks possible_isbn.
+#         Called by get_filtered_alternates() """
+#     time.sleep( 1 )
+#     alt_info_dct = alt_language_code = None
+#     try:
+#         alt_info_dct = json.loads( isbnlib.meta(possible_isbn, service='default', cache='default') )
+#     except Exception as e:
+#         log.warning( 'problem load metadata for possible_isbn, `%s`; error, ```%s```; continuing' % (possible_isbn, e) )
+#     if alt_info_dct:
+#         alt_language_code = alt_info_dct.get( 'Language', None )
+#     if language_code == alt_language_code:
+#         filtered_alternates.append( possible_isbn )
+#     return
 
 
 # def get_filtered_alternates( self, alternates ):
