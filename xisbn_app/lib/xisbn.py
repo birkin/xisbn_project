@@ -47,39 +47,6 @@ class XHelper( object ):
         log.debug( 'alternates, ```%s```' % alternates )
         return alternates
 
-    def get_filtered_alternates( self, alternates ):
-        """ Returns list of filtered alternates.
-            Called by views.filtered_alternates() """
-        filtered_alternates = []
-        try:
-            info_dct = isbnlib.meta(self.canonical_isbn, service='default', cache='default')
-        except Exception as e:
-            log.error( 'exception loading metadata, ```%s```; returning empty filtered_alternates list' % e )
-            return []
-        language_code = info_dct.get( 'Language', None )
-        log.debug( 'language_code, `%s`' % language_code )
-        if language_code is None:
-            return []
-        for possible_isbn in alternates:
-            self.apply_filter( possible_isbn, language_code, filtered_alternates )
-        log.debug( 'filtered_alternates, ```%s```' % filtered_alternates )
-        return filtered_alternates
-
-    def apply_filter( self, possible_isbn, language_code, filtered_alternates ):
-        """ Checks possible_isbn.
-            Called by get_filtered_alternates() """
-        time.sleep( 1 )
-        alt_info_dct = alt_language_code = None
-        try:
-            alt_info_dct = json.loads( isbnlib.meta(possible_isbn, service='default', cache='default') )
-        except Exception as e:
-            log.warning( 'problem load metadata for possible_isbn, `%s`; error, ```%s```; continuing' % (possible_isbn, e) )
-        if alt_info_dct:
-            alt_language_code = alt_info_dct.get( 'Language', None )
-        if language_code == alt_language_code:
-            filtered_alternates.append( possible_isbn )
-        return
-
     def make_alternates_response( self, request, alternates, start_time ):
         """ Builds unfiltered response.
             Called by views.alternates() """
@@ -131,13 +98,18 @@ class Processor( object ):
         log.debug( 'initializing Processor()' )
         pass
 
-    def get_alternates( self ):
-        """ Returns list of alternates.
-            Called by ? """
-        alternates = isbnlib.editions( self.canonical_isbn, service='merge' )
+    def prepare_alternates( self, x_record ):
+        """ Prepares and saves list of alternates.
+            Called by Enhancer.process_isbn() """
+        alternates = isbnlib.editions( x_record.canonical_isbn, service='merge' )
         alternates = self.run_remove( alternates )
-        log.debug( 'alternates, ```%s```' % alternates )
-        return alternates
+        now = datetime.datetime.now()
+        data_dct = { 'prepared': str(now), 'alternates': alternates }
+        x_record.alternates = json.dumps( data_dct )
+        x_record.bfa_last_changed_date = datetime.datetime.now()
+        x_record.save()
+        log.debug( 'alternates, ```%s```' % x_record.alternates )
+        return
 
     def run_remove( self, alternates ):
         """ Removes target isbn from alternates list.
@@ -149,9 +121,97 @@ class Processor( object ):
             log.debug( 'canonical_isbn was not in alternates list' )
         return alternates
 
+    def prepare_filtered_alternates( self, x_record ):
+        """ Prepares and saves list of filtered_alternates.
+            Called by Enhancer.process_isbn() """
+        canonical_language_code = self.get_isbn_meta( x_record )
+        if not canonical_language_code:
+            data_dct = { 'prepared': str(datetime.datetime.now()), 'filtered_alternates': [] }
+        else:
+            data_dct = self.loop_through_alternates( x_record )
+        x_record.filtered_alternates = json.dumps( data_dct, sort_keys=True )
+        x_record.bfa_last_changed_date = datetime.datetime.now()
+        x_record.save()
+        log.debug( 'filtered_alternates, ```%s```' % x_record.filtered_alternates )
+        return
+
+    def get_isbn_meta( self, x_record ):
+        """ Returns meta for language comparison.
+            Called by prepare_filtered_alternates() """
+        try:
+            data_dct = isbnlib.meta(x_record.canonical_isbn, service='default', cache='default')
+        except Exception as e:
+            log.error( 'exception loading metadata, ```%s```' % e )
+            return None
+        x_record.canonical_meta = json.dumps( data_dct, sort_keys=True )
+        x_record.bfa_last_changed_date = datetime.datetime.now()
+        x_record.save()
+        language_code = data_dct.get( 'Language', None )
+        log.debug( 'canonical-language_code, `%s`' % language_code )
+        return language_code
+
+    def loop_through_alternates( self, x_record ):
+        """ Loops through each alternate, filtering on language code.
+            Called by prepare_filtered_alternates() """
+        filtered_alternates = []
+        for alt_isbn in json.loads(x_record.alternates)['alternates'] :
+            self.check_alt_isbn( alt_isbn, x_record, filtered_alternates )
+            time.sleep( 10 )
+        data_dct = { 'prepared': str(datetime.datetime.now()), 'filtered_alternates': filtered_alternates }
+        return data_dct
+
+    def check_alt_isbn( self, alt_isbn, x_record, filtered_alternates ):
+        """ Checks alt_isbn language-code and adds it to filtered_isbns if it matches.
+            Called by loop_through_alternates() """
+        canonical_language_code = json.loads(x_record.canonical_meta)['Language']
+        try:
+            data_dct = isbnlib.meta( alt_isbn, service='default', cache='default' )
+        except Exception as e:
+            data_dct = {}
+            log.warning( 'exception loading metadata, ```%s```; isbn was `%s`' % (e, alt_isbn) )
+        alt_language_code = data_dct.get( 'Language', None )
+        if alt_language_code == canonical_language_code:
+            log.debug( 'alt_data_dct, ```%s```' % data_dct )
+            filtered_alternates.append( {alt_isbn: data_dct} )
+        return
+
     ## end class Processor()
 
 
+
+def apply_filter( self, possible_isbn, language_code, filtered_alternates ):
+    """ Checks possible_isbn.
+        Called by get_filtered_alternates() """
+    time.sleep( 1 )
+    alt_info_dct = alt_language_code = None
+    try:
+        alt_info_dct = json.loads( isbnlib.meta(possible_isbn, service='default', cache='default') )
+    except Exception as e:
+        log.warning( 'problem load metadata for possible_isbn, `%s`; error, ```%s```; continuing' % (possible_isbn, e) )
+    if alt_info_dct:
+        alt_language_code = alt_info_dct.get( 'Language', None )
+    if language_code == alt_language_code:
+        filtered_alternates.append( possible_isbn )
+    return
+
+
+# def get_filtered_alternates( self, alternates ):
+#     """ Returns list of filtered alternates.
+#         Called by views.filtered_alternates() """
+#     filtered_alternates = []
+#     try:
+#         info_dct = isbnlib.meta(self.canonical_isbn, service='default', cache='default')
+#     except Exception as e:
+#         log.error( 'exception loading metadata, ```%s```; returning empty filtered_alternates list' % e )
+#         return []
+#     language_code = info_dct.get( 'Language', None )
+#     log.debug( 'language_code, `%s`' % language_code )
+#     if language_code is None:
+#         return []
+#     for possible_isbn in alternates:
+#         self.apply_filter( possible_isbn, language_code, filtered_alternates )
+#     log.debug( 'filtered_alternates, ```%s```' % filtered_alternates )
+#     return filtered_alternates
 
 
 # def get_alternates( self ):
