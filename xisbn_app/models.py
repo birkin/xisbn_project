@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 
 class XisbnTracker( models.Model ):
     canonical_isbn = models.CharField( max_length=13, null=True, blank=True )
+    canonical_meta = models.TextField( null=True, blank=True )
     canonical_isbn_count = models.IntegerField( default=0, null=True, blank=True )
     alternates = models.TextField( null=True, blank=True )
     filtered_alternates = models.TextField( null=True, blank=True )
