@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import datetime, json, logging, os, pprint, time
-import isbnlib
+import isbnlib, requests
 from django.core.cache import cache
 from django.http import HttpResponse
 from xisbn_app.models import XisbnTracker
@@ -180,7 +180,9 @@ class Processor( object ):
             Called by Enhancer.process_isbn() """
         brown_filtered_alternates = []
         filtered_alternates = json.loads(x_record.filtered_alternates)['filtered_alternates']
-        for ( isbn_key, meta_dct_val ) in filtered_alternates:
+        for entry in filtered_alternates:
+            log.debug( 'entry, ```%s```' % entry )
+            ( isbn_key, meta_dct_val ) = list( entry.items() )[0]  # each entry is a one-element dct
             url = 'https://library.brown.edu/availability_api/v1/isbn/%s/' % isbn_key
             r = requests.get( url )
             if r.status_code == 200:
@@ -193,8 +195,6 @@ class Processor( object ):
         x_record.save()
         log.debug( 'brown_filtered_alternates, ```%s```' % x_record.filtered_alternates )
         return
-
-
 
     ## end class Processor()
 
